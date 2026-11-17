@@ -1,0 +1,9 @@
+Summary for /home/runner/work/Restarter-1.12.2-sponge/Restarter-1.12.2-sponge/build/recovery/restarter-application-bytecode.jar
+Decompiled with CFR 0.152
+
+
+net.craftersland.restarter.Engine
+----------------------------
+
+run()
+  Unable to fully structure code

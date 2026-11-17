@@ -1,0 +1,15 @@
+name: Restarter
+main: net.craftersland.restarter.RR
+version: 1.18.11
+author: CraftersLand
+website: www.craftersland.net
+load: STARTUP
+softdepend: [Essentials]
+description: Scheduled server restart.
+commands:
+    rr:
+        description: The main command.
+permissions:
+    RR.admin:
+        description: Admin commands access.
+        default: op

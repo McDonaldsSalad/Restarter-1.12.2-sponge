@@ -1,0 +1,138 @@
+# default config.yml for Restarter for sponge
+# config version 1.21.0
+
+
+#MySQL Database details
+Database:
+    Mysql:
+        #MySQL server address
+        Host: 127.0.0.1
+        #MySQL server port (default 3306)
+        Port: 3306
+        #Database name (NOTE! You need to create the database, then the plugin will create the tables.)
+        DatabaseName: 'mydatabase'
+        #Table name (the plugin will auto create them)
+        TableName: 'server_performance'
+        #User name
+        User: 'admin'
+        #User password
+        Password: 'cheesecake'
+    #This maintenance task runs async with a 2 min delay after the server starts.
+    RemoveInactiveUsers:
+        #Enable or disable database clean up of old accounts. | (true or false)
+        enabled: false
+        #Inactivity in days. Default 60 days.
+        inactivity: 60
+    Mysql-Chunkloaders:
+        #MySQL server address
+        Host: 127.0.0.1
+        #MySQL server port (default 3306)
+        Port: 3306
+        #Database name (NOTE! You need to create the database, then the plugin will create the tables.)
+        DatabaseName: 'mydatabase'
+        #Table name (the plugin will auto create them)
+        PlayersTableName: 'chunkloader_players'
+        ChunkLoadersTableName: 'chunkloader_data'
+        #User name
+        User: 'admin'
+        #User password
+        Password: 'cheesecake'
+
+
+#Server restart time in minutes. Default 180 minutes (3h).
+RestartIn: 180
+#ServerName used for storage
+ServerName: 'Name'
+#In minutes.
+CrashDetectionTrigger: 5
+#Server will auto restart if TPS goes too low.
+Low-TPS-Restart: 9.0
+#Max tile entities and chunks needed to restart.
+MaxTileEntities: 80000
+MaxLoadedChunks: 2500
+#
+Prevent-Explosion-Block-Damage: false
+Prevent-Fire-Spread: false
+SpawnProtection:
+    Enabled: false
+    World: 'world'
+    Pos1:
+        x: 0
+        y: 0
+        z: 0
+    Pos2:
+        x: 0
+        y: 0
+        z: 0
+Fix-First-Join-Location: false
+RandomTeleportOnRespawn: false
+Fix-Backpack-Drop-Dupe: false
+Fix-DankNull-Dupe: false
+Fix-Nucleus-Delhome-Cmd: false
+Fix-SkyFactory-SpawnJoin: false
+Spawn-Item-Usage-Restricted:
+- 'thermalfoundation:wrench'
+SkyFactoryWorldSpawn:
+    World: 'world'
+    Pos1:
+        x: 0
+        y: 0
+        z: 0
+    Pos2:
+        x: 0
+        y: 0
+        z: 0
+Fix-MiningWorld-Join: false
+MiningWorldName: 'mining'
+Give-Claim-Kit: false
+StrongBox-Material: 'thermalexpansion:strongbox'
+#OnlinePlayers settings.
+OtherServers:
+- 'SkyFactory'
+- 'TekkitMain'
+BlockToRemove:
+- 'test'
+Chunkloaders:
+- 'test'
+SavedChunkloaders: 4
+SavedChunloadersWorlds:
+- world
+- DIM-1
+DisableWhitelistOnStart: false
+Debug: false
+
+#These users will be allowed to grant OP or full perms *
+Anti-Hacks-Protection: false
+SafeUsers:
+- brunyman
+- henkekalmar
+RestrictedCmdSafeUsers:
+- lp
+- luckperms
+- perms
+- op
+- permissions
+- perm
+
+#Remote Toolkit data.
+ToolKit:
+    #Remote toolkit port.
+    RemotePort: 25561
+    #User and Password. Format:  user:password
+    UserPass: 'user:0000'
+
+#Chat messages with color codes suport.
+ChatMessage:
+    RestartBroadcast: '&5&l--> &dServer restart in&6 %time%&d &5&l<--'
+    ChunkLoaderSaved: '&2[System] &aChunkloader saved. <placed> saved of <max> max.'
+    ChunkLoaderRemoved: '&2[System] &aChunkloader removed. <placed> saved of <max> max.'
+    MaxChunkLoaderReached: '&4[System] &cMax saved chunkloader limit reached! Max <max>'
+    SpawnUsageBlocked: '&4[System] &cYou can''t use this item here!'
+    AdvertTitle:
+    - ' '
+    - '  &5&lModded servers stats:'
+    AdvertContent: '&6 %count% &dplayers online on&6 %server% &dserver.'
+    AdvertEnd: 
+    - ' &5More details on&d www.craftersland.net'
+    - ' '
+    CommandRestricted: '&4[HackYou OS] &cYou are not authorized to use this command! If this is an error contact us, else go hack BACON'
