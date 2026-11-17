@@ -20,14 +20,24 @@ from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import tarfile
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
+from urllib.error import HTTPError, URLError
+import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 INPUT = ROOT / 'recovery' / 'restarter-app-classes.b85'
 CONFIG = ROOT / 'src/main/resources/assets/restarter/config.yml'
 OUTPUT = ROOT / 'build' / 'libs' / 'Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar'
-DRIVER_URL = 'https://repo.maven.apache.org/maven2/mysql/mysql-connector-java/5.1.40/mysql-connector-java-5.1.40.jar'
+DRIVER_PATH = 'mysql/mysql-connector-java/5.1.40/mysql-connector-java-5.1.40.jar'
+DRIVER_URLS = [
+    'https://repo.maven.apache.org/maven2/' + DRIVER_PATH,
+    'https://repo1.maven.org/maven2/' + DRIVER_PATH,
+    'https://maven-central.storage-download.googleapis.com/maven2/' + DRIVER_PATH,
+    'https://maven.elmakers.com/repository/' + DRIVER_PATH,
+]
+# SHA-256 of the exact Connector/J 5.1.40 jar used in first successful build
+DRIVER_SHA256 = '27a80bf2e36d9d08d1be93f70d3124633a6952fe3b95833306905dcba6bfe96d'
 APP_PACKAGE = 'net/craftersland/restarter/'
 CHANGED_CLASSES = {'net/craftersland/restarter/ConfigHandler.class',
                    'net/craftersland/restarter/Engine$2.class',
@@ -65,10 +75,30 @@ def mysql_entries(original_jar: str | None):
             data = Path(original_jar).read_bytes()
             print('Using original user-supplied JAR to source Connector/J', hashlib.sha256(data).hexdigest())
     else:
-        print('Fetching bundled driver 5.1.40 from Maven Central')
-        with urlopen(DRIVER_URL, timeout=90) as response:
-            data = response.read()
-        print('MySQL 5.1.40 SHA-256:', hashlib.sha256(data).hexdigest())
+        print('Fetching Connector/J 5.1.40 (checksum pinned)')
+        data = None
+        failures = []
+        for url in DRIVER_URLS:
+            for attempt in range(2):
+                try:
+                    request = Request(url, headers={'User-Agent': 'Restarter-SpongeForge-Build/1.0'})
+                    with urlopen(request, timeout=40) as response:
+                        candidate = response.read()
+                    digest = hashlib.sha256(candidate).hexdigest()
+                    if digest != DRIVER_SHA256:
+                        raise ValueError('Driver checksum mismatch at ' + url + ': ' + digest)
+                    data = candidate
+                    print('Verified MySQL 5.1.40 SHA-256:', digest)
+                    break
+                except (HTTPError, URLError, TimeoutError) as ex:
+                    failures.append(str(ex) + ' for ' + url)
+                    print('Download failed, trying another source:', ex)
+                    if attempt == 0:
+                        time.sleep(2)
+            if data is not None:
+                break
+        if data is None:
+            raise RuntimeError('Could not securely fetch JDBC driver: ' + '; '.join(failures))
     result = {}
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         for name in z.namelist():
