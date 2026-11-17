@@ -1,0 +1,42 @@
+name: Recover Restarter Java Source
+
+on:
+  push:
+    paths:
+      - "recovery/restarter-app-classes.b85"
+      - "tools/reconstruct_and_decompile.py"
+      - ".github/workflows/recover-source.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Configure Java for CFR
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Reconstruct app and decompile Java source
+        run: python3 tools/reconstruct_and_decompile.py
+
+      - name: Commit decompiled Java and resource files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/main/java src/main/resources docs/DECOMPILATION_REPORT.md
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+          else
+            git commit -m "Recover Restarter Sponge Java sources using CFR 0.152"
+            git push
+          fi
