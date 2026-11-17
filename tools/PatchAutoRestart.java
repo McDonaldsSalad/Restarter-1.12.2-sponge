@@ -169,6 +169,11 @@ public final class PatchAutoRestart implements Opcodes {
         guard.add(taskAbsent);
         guard.add(new InsnNode(POP));
         guard.add(done);
+        // Original auto-trigger path cancels the main monitor before countdown.
+        // Restart it when disabling automatic restarts during that countdown.
+        guard.add(new VarInsnNode(ALOAD, 0));
+        guard.add(new FieldInsnNode(GETFIELD, ENGINE + "$3", "this$0", "L" + ENGINE + ";"));
+        guard.add(new MethodInsnNode(INVOKEVIRTUAL, ENGINE, "mainTimer", "()V", false));
         guard.add(new InsnNode(RETURN));
         guard.add(enabled);
         run.instructions.insert(guard);
