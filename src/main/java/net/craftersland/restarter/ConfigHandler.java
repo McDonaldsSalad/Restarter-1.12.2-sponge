@@ -145,5 +145,18 @@ public class ConfigHandler {
         }
         return data.getBoolean();
     }
+    /**
+     * Controls only automatic restart triggers. A missing key defaults to enabled,
+     * preserving the behavior of existing config.yml files after a plugin update.
+     * Reloading the config with /rr reload updates this value immediately.
+     */
+    public boolean isAutoRestartEnabled() {
+        if (this.config == null) {
+            return true;
+        }
+        ConfigurationNode setting = this.config.getNode("AutoRestartEnabled");
+        return setting.isVirtual() || setting.getBoolean();
+    }
+
 }
 
