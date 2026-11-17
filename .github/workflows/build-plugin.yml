@@ -1,0 +1,46 @@
+name: Build Restarter Sponge Auto-Restart Toggle
+
+on:
+  push:
+    paths:
+      - ".github/workflows/build-plugin.yml"
+      - "tools/PatchAutoRestart.java"
+      - "tools/build_autorestart_toggle.py"
+      - "recovery/restarter-app-classes.b85"
+      - "src/main/resources/assets/restarter/config.yml"
+      - "src/main/java/net/craftersland/restarter/Engine.java"
+      - "src/main/java/net/craftersland/restarter/ConfigHandler.java"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout recovered source and application bytecode
+        uses: actions/checkout@v4
+
+      - name: Install build-time Java 21 (JDK internal ASM)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build Java 8-compatible Restarter JAR
+        run: python3 tools/build_autorestart_toggle.py
+
+      - name: Verify patched classes target Java 8
+        run: |
+          javap -verbose -classpath build/libs/Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar net.craftersland.restarter.ConfigHandler | grep -F "major version: 52"
+          javap -verbose -classpath build/libs/Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar 'net.craftersland.restarter.Engine$2' | grep -F "major version: 52"
+          javap -verbose -classpath build/libs/Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar 'net.craftersland.restarter.Engine$3' | grep -F "major version: 52"
+
+      - name: Publish plugin JAR as downloadable workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle
+          path: build/libs/Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar
+          if-no-files-found: error
+          retention-days: 30
