@@ -27,7 +27,7 @@ The script downloads CFR 0.152 from Maven Central if it is not already cached in
 
 The patched plugin JAR is built by [Build Restarter Sponge Auto-Restart Toggle](.github/workflows/build-plugin.yml). Open **Actions** > **Build Restarter Sponge Auto-Restart Toggle** > the latest successful run > **Artifacts** to download the JAR.
 
-This is a **bytecode-preserving build**. The plugin's 51 recovered application class files are retained; the builder changes only `ConfigHandler.class`, `Engine$2.class`, and `Engine$3.class`, then bundles Connector/J **5.1.40**. The standalone Java 8-compatible JAR is available as a GitHub Actions artifact after a successful run.
+This is a **bytecode-preserving build**. The plugin's 51 recovered application class files are retained; the builder changes only `ConfigHandler.class`, `Engine$2.class`, and `Engine$3.class`, then bundles Connector/J **5.1.40**. **The decompiled `src/main/java` files are for maintenance/reference; this particular build script does not recompile arbitrary edits to those files.** Changes intended for the deployed binary must be implemented in the patcher or later in a fully repaired source build. The standalone Java 8-compatible JAR is available as a GitHub Actions artifact after a successful run.
 
 Add this setting to `plugins/Restarter/config.yml` on the running server (the plugin does **not** rewrite existing configs):
 
