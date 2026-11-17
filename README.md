@@ -23,6 +23,42 @@ python tools/reconstruct_and_decompile.py
 
 The script downloads CFR 0.152 from Maven Central if it is not already cached in `tools/cfr-0.152.jar`, so network access is required. The packed recovery archive does not include the MySQL connector; it is intentionally excluded from version control. If you need to build the plugin, set up a Java 8 project with SpongeAPI 7.x, Minecraft Forge 1.12.2, and any needed mod/API dependencies. **A successful build and server behavior have not yet been verified.**
 
+## Auto-restart toggle (2026-11-17)
+
+The patched plugin JAR is built by [Build Restarter Sponge Auto-Restart Toggle](.github/workflows/build-plugin.yml). Open **Actions** > **Build Restarter Sponge Auto-Restart Toggle** > the latest successful run > **Artifacts** to download the JAR.
+
+This is a **bytecode-preserving build**. The plugin's 51 recovered application class files are retained; the builder changes only `ConfigHandler.class`, `Engine$2.class`, and `Engine$3.class`, then bundles Connector/J **5.1.40**. The standalone Java 8-compatible JAR is available as a GitHub Actions artifact after a successful run.
+
+Add this setting to `plugins/Restarter/config.yml` on the running server (the plugin does **not** rewrite existing configs):
+
+```yaml
+# true (default): retain original automatic-restart behavior
+# false: do not auto-restart for low TPS, sustained high memory, uptime or low player counts
+AutoRestartEnabled: false
+```
+
+Run `/rr reload` after saving. The setting is checked on the next monitoring cycle, and any in-progress automatic countdown is cancelled on its next tick. **Missing setting defaults to true**, preserving existing deployments. Database reconnection, server monitoring, advertising, `/rr` commands and manual/panel restarts are not disabled.
+
+**Legacy limitation:** The old `RestartIn: 180` setting appears in the original startup log but is not used to drive the automatic restart logic in the supplied binary. This patch adds a master toggle for the existing resource/uptime restart conditions; it does **not** introduce a fixed-interval restart scheduler.
+
+### Building
+
+The supported build entry point is:
+
+```bash
+python3 tools/build_autorestart_toggle.py
+```
+
+This requires Python 3.10+ and JDK **21 as build-time tooling only** (using the JDK's bundled ASM). The generated plugin classes remain **Java 8 bytecode**. By default it downloads the original driver version (MySQL Connector/J 5.1.40) from Maven Central; for a local build with the exact original bundled driver you can pass:
+
+```bash
+python3 tools/build_autorestart_toggle.py --original-jar /path/to/original-restarter.jar
+```
+
+Output: `build/libs/Restarter-1.21.3-SpongeForge-1.12.2-AutoRestartToggle.jar`.
+
+Keep only **one** copy of Restarter in your `plugins` directory. Back up the original JAR and configuration before replacing it. The class patches and archive were verified, including a JVM verification test of the accessor, but **full integration on a live SpongeForge/Forge 1.12.2 server remains untested**.
+
 ## Before modifying production
 
 Review and test changes on a backup staging server, particularly multi-server database writes, scheduled restarts, and chunkloader persistence. The original default config includes example database credentials: do not use those defaults in production.
