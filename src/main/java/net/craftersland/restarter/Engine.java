@@ -157,6 +157,9 @@ public class Engine {
                     if (!Engine.this.rr.getConfigHandler().isAutoRestartEnabled()) {
                         isFinalTimerRunning = false;
                         Sponge.getScheduler().getTaskById(finalTimerID).ifPresent(Task::cancel);
+                        // The original restart trigger stopped the main monitor.
+                        // Restore it so monitoring and later toggle changes still work.
+                        Engine.this.mainTimer();
                         return;
                     }
                     isFinalTimerRunning = true;
