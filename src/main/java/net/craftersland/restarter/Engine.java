@@ -96,62 +96,52 @@ public class Engine {
         }
     }
 
+    /**
+     * Monitors the server every 60 seconds. Automatic restart conditions can be
+     * switched off without stopping database recovery, telemetry or adverts.
+     * The original RestartIn config value was only used by the legacy log line.
+     */
     public void mainTimer() {
         RR.log.info("Restart scheduled in " + this.rr.getConfigHandler().getInteger("RestartIn") + " minutes.");
-        Task task = Task.builder().async().delayTicks(1200L).intervalTicks(1200L).execute(new Runnable(){
-
-            /*
-             * Unable to fully structure code
-             */
+        Task task = Task.builder().async().delayTicks(1200L).intervalTicks(1200L).execute(new Runnable() {
             @Override
             public void run() {
-                block14: {
-                    block13: {
-                        if (!Engine.access$0() && Engine.access$1(Engine.this).getMysqlSetup().isDbSetupComplete() && (Engine.access$1(Engine.this).getMysqlSetup().getConnection() == null || Engine.access$1(Engine.this).getMysqlSetup().getLocalConnection() == null)) {
-                            Engine.access$2(true);
-                            Engine.access$1(Engine.this).getMysqlSetup().connectToDatabase();
-                            Engine.access$2(false);
-                        }
-                        serverUptime = System.currentTimeMillis() - Engine.access$3();
-                        Engine.access$1(Engine.this).getServerMonitor().updateData();
-                        if (!(Engine.access$1(Engine.this).getServerMonitor().getMemoryUsagePercent1() > 85.0) || !(Engine.access$1(Engine.this).getServerMonitor().getMemoryUsagePercent2() > 85.0)) break block13;
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                        break block14;
-                    }
-                    v0 = new Object[]{"Low-TPS-Restart"};
-                    if (!(Engine.access$1(Engine.this).getServerMonitor().getTPS1() <= Engine.access$1(Engine.this).getConfigHandler().getDouble(v0))) ** GOTO lbl-1000
-                    v1 = new Object[]{"Low-TPS-Restart"};
-                    if (Engine.access$1(Engine.this).getServerMonitor().getTPS2() <= Engine.access$1(Engine.this).getConfigHandler().getDouble(v1) && serverUptime / 1000L >= 300L) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                    } else if (Engine.access$1(Engine.this).getServerMonitor().getTPS1() <= 18.0 && Engine.access$1(Engine.this).getServerMonitor().getTPS2() <= 18.0 && serverUptime / 1000L > 7200L) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                    } else if (Engine.access$1(Engine.this).getServerMonitor().getTPS1() <= 18.5 && Engine.access$1(Engine.this).getServerMonitor().getTPS2() <= 18.5 && serverUptime / 1000L > 14400L && Engine.access$1(Engine.this).getServerMonitor().getTileEntities() > Engine.access$1(Engine.this).getConfigHandler().getInteger(new Object[]{"MaxTileEntities"})) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                    } else if (Engine.access$1(Engine.this).getServerMonitor().getTPS1() <= 18.5 && Engine.access$1(Engine.this).getServerMonitor().getTPS2() <= 18.5 && serverUptime / 1000L > 21600L) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                    } else if (serverUptime / 1000L > 7200L && Engine.access$1(Engine.this).getServerMonitor().getOnlinePlayers() == 0) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
-                    } else if (serverUptime / 1000L > 28800L && Engine.access$1(Engine.this).getServerMonitor().getOnlinePlayers() < 10) {
-                        Engine.access$4(System.currentTimeMillis());
-                        Engine.access$5(Engine.this);
-                        ((Task)Sponge.getScheduler().getTaskById(Engine.access$6()).get()).cancel();
+                if (!isDbReconnecting && Engine.this.rr.getMysqlSetup().isDbSetupComplete()
+                        && (Engine.this.rr.getMysqlSetup().getConnection() == null
+                        || Engine.this.rr.getMysqlSetup().getLocalConnection() == null)) {
+                    isDbReconnecting = true;
+                    Engine.this.rr.getMysqlSetup().connectToDatabase();
+                    isDbReconnecting = false;
+                }
+
+                long uptimeSeconds = (System.currentTimeMillis() - startTime) / 1000L;
+                Engine.this.rr.getServerMonitor().updateData();
+
+                // This guard is also applied to the original bytecode build,
+                // before evaluating any of the existing automatic triggers.
+                if (Engine.this.rr.getConfigHandler().isAutoRestartEnabled()) {
+                    ServerMonitor monitor = Engine.this.rr.getServerMonitor();
+                    double lowTps = Engine.this.rr.getConfigHandler().getDouble("Low-TPS-Restart");
+                    boolean autoRestart =
+                            (monitor.getMemoryUsagePercent1() > 85.0 && monitor.getMemoryUsagePercent2() > 85.0)
+                            || (monitor.getTPS1() <= lowTps && monitor.getTPS2() <= lowTps && uptimeSeconds >= 300L)
+                            || (monitor.getTPS1() <= 18.0 && monitor.getTPS2() <= 18.0 && uptimeSeconds > 7200L)
+                            || (monitor.getTPS1() <= 18.5 && monitor.getTPS2() <= 18.5
+                                && uptimeSeconds > 14400L
+                                && monitor.getTileEntities() > Engine.this.rr.getConfigHandler().getInteger("MaxTileEntities"))
+                            || (monitor.getTPS1() <= 18.5 && monitor.getTPS2() <= 18.5 && uptimeSeconds > 21600L)
+                            || (uptimeSeconds > 7200L && monitor.getOnlinePlayers() == 0)
+                            || (uptimeSeconds > 28800L && monitor.getOnlinePlayers() < 10);
+                    if (autoRestart) {
+                        finalTimeStart = System.currentTimeMillis();
+                        Engine.this.finalTimer();
+                        Sponge.getScheduler().getTaskById(mainTimerID).ifPresent(Task::cancel);
                     }
                 }
-                Engine.access$7(Engine.this);
-                if ((System.currentTimeMillis() - Engine.access$8()) / 1000L >= 12000L) {
-                    Engine.access$9(Engine.this);
+
+                Engine.this.updateOtherServers();
+                if ((System.currentTimeMillis() - advertSentTimer) / 1000L >= 12000L) {
+                    Engine.this.broadcastAdvert();
                 }
             }
         }).submit((Object)this.rr);
@@ -164,6 +154,11 @@ public class Engine {
 
                 @Override
                 public void run() {
+                    if (!Engine.this.rr.getConfigHandler().isAutoRestartEnabled()) {
+                        isFinalTimerRunning = false;
+                        Sponge.getScheduler().getTaskById(finalTimerID).ifPresent(Task::cancel);
+                        return;
+                    }
                     isFinalTimerRunning = true;
                     Long countdown = System.currentTimeMillis() - finalTimeStart;
                     int countdownMili = countdown.intValue();
