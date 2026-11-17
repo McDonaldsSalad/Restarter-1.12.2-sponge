@@ -39,6 +39,12 @@ Database:
         Password: 'cheesecake'
 
 
+#Automatic restarts are enabled by default for backward compatibility.
+#Set false to disable auto-restarts triggered by low TPS, high memory use, or uptime/player conditions.
+#Monitoring, databases, and manual/external restarts remain active.
+#Use /rr reload to apply changes. Disabling also cancels a pending automatic countdown.
+AutoRestartEnabled: true
+
 #Server restart time in minutes. Default 180 minutes (3h).
 RestartIn: 180
 #ServerName used for storage
